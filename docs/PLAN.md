@@ -128,17 +128,17 @@ Adds the operations that change a claim and the rules that guard them, including
 
 Success criteria:
 
-- [ ] `start_claim` moves a `waiting` claim to `in_progress`
-- [ ] Recording a decline or a referral, or an approval of $1,000.00 or less, moves the claim to `decided`
-- [ ] Recording an approval of $1,000.01 or more moves the claim to `awaiting_signoff`
-- [ ] Paying an approved claim at or under the limit records the payment
-- [ ] Paying a claim over the limit before sign-off returns 409 and records nothing
-- [ ] Paying a declined or referred claim, paying the wrong amount and paying twice each return 409
-- [ ] Signing off a claim `awaiting_signoff` records the handler and the payment, and moves it to `decided`
-- [ ] Signing off a claim in any other state, or with an unknown handler, is refused
-- [ ] `record_decision` refuses a decision that isn't `approve`, `decline` or `refer`
-- [ ] Steps posted to a claim come back from `list_steps` in order
-- [ ] `npm run check:python` passes, with coverage at 80% or more
+- [x] `start_claim` moves a `waiting` claim to `in_progress`
+- [x] Recording a decline or a referral, or an approval of $1,000.00 or less, moves the claim to `decided`
+- [x] Recording an approval of $1,000.01 or more moves the claim to `awaiting_signoff`
+- [x] Paying an approved claim at or under the limit records the payment
+- [x] Paying a claim over the limit before sign-off returns 409 and records nothing
+- [x] Paying a declined or referred claim, paying the wrong amount and paying twice each return 409
+- [x] Signing off a claim `awaiting_signoff` records the handler and the payment, and moves it to `decided`
+- [x] Signing off a claim in any other state, or with an unknown handler, is refused
+- [x] `record_decision` refuses a decision that isn't `approve`, `decline` or `refer`
+- [x] Steps posted to a claim come back from `list_steps` in order
+- [x] `npm run check:python` passes, with coverage at 80% or more
 
 ## Phase 3: the UnderCover Agent
 

@@ -4,10 +4,12 @@ import json
 import sqlite3
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 from backend import db
 
@@ -32,6 +34,30 @@ def get_db() -> Iterator[sqlite3.Connection]:
 
 
 Db = Annotated[sqlite3.Connection, Depends(get_db)]
+
+
+class Decision(BaseModel):
+    decision: Literal["approve", "decline", "refer"]
+    payout: float = Field(ge=0)
+    reasons: str
+    policy_section: str
+
+
+class Payment(BaseModel):
+    amount: float
+
+
+class SignOff(BaseModel):
+    handler_id: str
+
+
+class Step(BaseModel):
+    kind: str
+    content: str
+
+
+def now() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def fetch(connection: sqlite3.Connection, table: str, key: str) -> dict[str, Any]:
@@ -154,3 +180,128 @@ def list_handlers(connection: Db) -> list[dict[str, Any]]:
         for row in rows
         for handler in [json.loads(row["body"])]
     ]
+
+
+def payout_limit(connection: sqlite3.Connection) -> float:
+    return json.loads(document(connection, "company"))["payout_approval_limit"]
+
+
+def update_claim(
+    connection: sqlite3.Connection, claim_id: str, **columns: object
+) -> dict[str, Any]:
+    values = {
+        key: value if isinstance(value, str) else json.dumps(value)
+        for key, value in columns.items()
+    }
+    assignments = ", ".join(f"{key} = ?" for key in values)
+    with connection:
+        connection.execute(
+            f"UPDATE claims SET {assignments} WHERE id = ?",  # noqa: S608
+            [*values.values(), claim_id],
+        )
+    return claim_view(claim_row(connection, claim_id))
+
+
+def require_status(row: sqlite3.Row, status: str) -> None:
+    if row["status"] != status:
+        raise HTTPException(409, f"{row['id']} is {row['status']}, not {status}")
+
+
+def payment_refusal(row: sqlite3.Row, amount: float, limit: float) -> str | None:
+    decision = row["decision"] and json.loads(row["decision"])
+    if not decision or decision["decision"] != "approve":
+        return "Only an approved claim can be paid."
+    if row["payment"]:
+        return "This claim has already been paid."
+    if round(amount, 2) != round(decision["payout"], 2):
+        return f"The approved payout is ${decision['payout']:,.2f}."
+    if decision["payout"] > limit and not row["signoff"]:
+        return f"A payout over ${limit:,.2f} needs a handler's sign-off."
+    return None
+
+
+@app.post("/api/claims/{claim_id}/start", operation_id="start_claim")
+def start_claim(claim_id: str, connection: Db) -> dict[str, Any]:
+    """Mark a waiting claim as in progress."""
+    require_status(claim_row(connection, claim_id), "waiting")
+    return update_claim(connection, claim_id, status="in_progress")
+
+
+@app.post("/api/claims/{claim_id}/decision", operation_id="record_decision")
+def record_decision(
+    claim_id: str, decision: Decision, connection: Db
+) -> dict[str, Any]:
+    """Record the agent's decision on a claim in progress."""
+    require_status(claim_row(connection, claim_id), "in_progress")
+    if decision.decision != "approve" and decision.payout:
+        raise HTTPException(422, "Only an approval has a payout.")
+    over_limit = decision.payout > payout_limit(connection)
+    return update_claim(
+        connection,
+        claim_id,
+        status="awaiting_signoff" if over_limit else "decided",
+        decision={**decision.model_dump(), "decided_at": now()},
+    )
+
+
+@app.post("/api/claims/{claim_id}/payment", operation_id="pay_claim")
+def pay_claim(claim_id: str, payment: Payment, connection: Db) -> dict[str, Any]:
+    """Pay an approved claim the given amount."""
+    refusal = payment_refusal(
+        claim_row(connection, claim_id), payment.amount, payout_limit(connection)
+    )
+    if refusal:
+        raise HTTPException(409, refusal)
+    return update_claim(
+        connection,
+        claim_id,
+        payment={"amount": round(payment.amount, 2), "paid_at": now()},
+    )
+
+
+@app.post("/api/claims/{claim_id}/signoff", operation_id="sign_off_claim")
+def sign_off_claim(claim_id: str, signoff: SignOff, connection: Db) -> dict[str, Any]:
+    """Sign off a claim awaiting sign-off and pay its payout."""
+    row = claim_row(connection, claim_id)
+    require_status(row, "awaiting_signoff")
+    handler = fetch(connection, "handlers", signoff.handler_id)
+    if not handler["can_approve_over_limit"]:
+        raise HTTPException(403, f"{handler['name']} cannot sign off this payout.")
+    update_claim(
+        connection,
+        claim_id,
+        signoff={
+            "handler_id": handler["handler_id"],
+            "name": handler["name"],
+            "signed_off_at": now(),
+        },
+    )
+    payout = json.loads(row["decision"])["payout"]
+    pay_claim(claim_id, Payment(amount=payout), connection)
+    return update_claim(connection, claim_id, status="decided")
+
+
+@app.get("/api/claims/{claim_id}/steps", operation_id="list_steps")
+def list_steps(claim_id: str, connection: Db) -> list[dict[str, Any]]:
+    """List the agent's steps on a claim, oldest first."""
+    claim_row(connection, claim_id)
+    rows = connection.execute(
+        "SELECT id, kind, content, created_at FROM steps WHERE claim_id = ? "
+        "ORDER BY id",
+        (claim_id,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@app.post("/api/claims/{claim_id}/steps", operation_id="add_step")
+def add_step(claim_id: str, step: Step, connection: Db) -> dict[str, Any]:
+    """Record one step of the agent's work on a claim."""
+    claim_row(connection, claim_id)
+    created_at = now()
+    with connection:
+        cursor = connection.execute(
+            "INSERT INTO steps (claim_id, kind, content, created_at) "
+            "VALUES (?, ?, ?, ?)",
+            (claim_id, step.kind, step.content, created_at),
+        )
+    return {"id": cursor.lastrowid, **step.model_dump(), "created_at": created_at}
