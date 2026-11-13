@@ -172,13 +172,13 @@ Builds the dashboard's frame, the brand and the two simpler views.
 
 Success criteria:
 
-- [ ] The queue lists 25 claims with id, customer, type, amount and state, and a count for each state
-- [ ] Clicking a claim goes to `#/claims/<id>`
-- [ ] "Work the queue" calls `run_queue`
-- [ ] The instructions view shows the text from `GET /api/instructions`, with no way to edit it
-- [ ] Money shows as $1,250.00 and the states use the brand colors
-- [ ] Checked in the browser with the Playwright MCP server, in light and dark mode
-- [ ] `npm run check:ts` passes, with coverage at 80% or more and no `any`
+- [x] The queue lists 25 claims with id, customer, type, amount and state, and a count for each state
+- [x] Clicking a claim goes to `#/claims/<id>`
+- [x] "Work the queue" calls `run_queue`
+- [x] The instructions view shows the text from `GET /api/instructions`, with no way to edit it
+- [x] Money shows as $1,250.00 and the states use the brand colors
+- [x] Checked in the browser with the Playwright MCP server, in light and dark mode
+- [x] `npm run check:ts` passes, with coverage at 80% or more and no `any`
 
 ## Phase 5: the claim view, the live steps and sign-off
 
