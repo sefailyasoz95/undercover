@@ -205,16 +205,16 @@ Ties it together with Playwright tests that never call a model, and brings the d
 
 - `playwright.config.ts`: the end-to-end run uses its own freshly seeded database through `UNDERCOVER_DB`, its own backend on port 8100 and its own dashboard on port 5174, so it never touches the database you use with `npm run dev`. The dashboard's proxy target comes from `BACKEND_URL`, defaulting to port 8000
 - `e2e/`: the agent's work is played through the API (start, steps, decision), so the tests are fast, free and the same every time
-- `docs/STATUS.md` and a short `README.md` section on running the pilot
+- `docs/STATUS.md` with how to run the pilot. The root `README.md` is the course's own, so the pilot's notes stay in `docs/STATUS.md`
 
 Success criteria:
 
-- [ ] An end-to-end test: the queue shows 25 claims
-- [ ] An end-to-end test: a claim with steps and a decision shows both in its view
-- [ ] An end-to-end test: a claim approved over $1,000 shows as waiting for sign-off, a payment through the API is refused, and signing off in the dashboard shows it decided and paid
-- [ ] An end-to-end test: the instructions view shows the instructions
-- [ ] `npm run check` passes in full
-- [ ] `docs/STATUS.md` says what is built and how to run it
+- [x] An end-to-end test: the queue shows 25 claims
+- [x] An end-to-end test: a claim with steps and a decision shows both in its view
+- [x] An end-to-end test: a claim approved over $1,000 shows as waiting for sign-off, a payment through the API is refused, and signing off in the dashboard shows it decided and paid
+- [x] An end-to-end test: the instructions view shows the instructions
+- [x] `npm run check` passes in full
+- [x] `docs/STATUS.md` says what is built and how to run it
 
 ## Not in the pilot
 
