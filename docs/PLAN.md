@@ -151,15 +151,15 @@ Replaces the skeleton's hello-world agent with the claims agent, its tools and i
 
 Success criteria:
 
-- [ ] A stub-model test runs a claim end to end: the agent reads the claim, policy, history and wording, approves CLM-1001 with a payout of $420.00, pays it, and the claim ends `decided` and paid
-- [ ] A stub-model test approves a claim over $1,000 and tries to pay it: the payment is refused, nothing is paid and the claim is `awaiting_signoff`
-- [ ] A stub-model test that never records a decision leaves the claim `decided` as a referral
-- [ ] After a run, `list_steps` shows the tool calls and the agent's final reply in order
-- [ ] A test shows the agent's instructions come from `GET /api/instructions`
-- [ ] A test shows `MODEL_NAME` still chooses the model
-- [ ] With the backend running and a key in `.env`, `uv run -m agent CLM-1001` records a decision on CLM-1001 with reasons and a policy section (one live run, a few cents, or free with `MODEL_NAME=openrouter/free`)
-- [ ] `POST /api/claims/CLM-1001/run` returns at once and the claim moves to `in_progress` (tested with a stub agent)
-- [ ] `npm run check:python` passes, with coverage at 80% or more
+- [x] A stub-model test runs a claim end to end: the agent reads the claim, policy, history and wording, approves CLM-1001 with a payout of $420.00, pays it, and the claim ends `decided` and paid
+- [x] A stub-model test approves a claim over $1,000 and tries to pay it: the payment is refused, nothing is paid and the claim is `awaiting_signoff`
+- [x] A stub-model test that never records a decision leaves the claim `decided` as a referral
+- [x] After a run, `list_steps` shows the tool calls and the agent's final reply in order
+- [x] A test shows the agent's instructions come from `GET /api/instructions`
+- [x] A test shows `MODEL_NAME` still chooses the model
+- [x] With the backend running and a key in `.env`, `uv run -m agent CLM-1001` records a decision on CLM-1001 with reasons and a policy section (one live run, a few cents, or free with `MODEL_NAME=openrouter/free`)
+- [x] `POST /api/claims/CLM-1001/run` returns at once and the claim moves to `in_progress` (tested with a stub agent)
+- [x] `npm run check:python` passes, with coverage at 80% or more
 
 ## Phase 4: the dashboard's queue and instructions
 

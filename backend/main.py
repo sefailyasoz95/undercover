@@ -1,16 +1,19 @@
 """The UnderCover backend."""
 
 import json
+import logging
 import sqlite3
+import uuid
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from agent import main as agent
 from backend import db
 
 INSTRUCTIONS = Path(__file__).parent / "instructions.md"
@@ -305,3 +308,32 @@ def add_step(claim_id: str, step: Step, connection: Db) -> dict[str, Any]:
             (claim_id, step.kind, step.content, created_at),
         )
     return {"id": cursor.lastrowid, **step.model_dump(), "created_at": created_at}
+
+
+def work_queue(claim_ids: list[str]) -> None:
+    for claim_id in claim_ids:
+        try:
+            agent.run(claim_id, str(uuid.uuid4()))
+        except Exception:
+            logging.exception("The agent failed on %s", claim_id)
+
+
+@app.post("/api/claims/{claim_id}/run", operation_id="run_agent")
+def run_agent(
+    claim_id: str, background: BackgroundTasks, connection: Db
+) -> dict[str, str]:
+    """Run the agent on a waiting claim in the background."""
+    require_status(claim_row(connection, claim_id), "waiting")
+    background.add_task(work_queue, [claim_id])
+    return {"claim_id": claim_id, "status": "started"}
+
+
+@app.post("/api/queue/run", operation_id="run_queue")
+def run_queue(background: BackgroundTasks, connection: Db) -> dict[str, list[str]]:
+    """Run the agent on every waiting claim, one after another, in the background."""
+    rows = connection.execute(
+        "SELECT id FROM claims WHERE status = 'waiting' ORDER BY id"
+    ).fetchall()
+    claim_ids = [row["id"] for row in rows]
+    background.add_task(work_queue, claim_ids)
+    return {"claim_ids": claim_ids}
