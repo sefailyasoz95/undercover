@@ -191,13 +191,13 @@ Builds the view where a handler reads a claim, follows the agent and signs off.
 
 Success criteria:
 
-- [ ] The claim view shows the story, items, documents and policy for CLM-1001
-- [ ] A decided claim shows the decision, payout, reasons and policy section
-- [ ] A claim in progress shows new steps as they arrive, without a reload
-- [ ] "Run agent" shows only on a `waiting` claim and calls `run_agent`
-- [ ] A claim `awaiting_signoff` shows the held payout and the sign-off control; signing off shows the claim `decided` and paid, with the handler's name
-- [ ] Checked in the browser with the Playwright MCP server: a live run on one claim shows its steps and its decision
-- [ ] `npm run check:ts` passes, with coverage at 80% or more and no `any`
+- [x] The claim view shows the story, items, documents and policy for CLM-1001
+- [x] A decided claim shows the decision, payout, reasons and policy section
+- [x] A claim in progress shows new steps as they arrive, without a reload
+- [x] "Run agent" shows only on a `waiting` claim and calls `run_agent`
+- [x] A claim `awaiting_signoff` shows the held payout and the sign-off control; signing off shows the claim `decided` and paid, with the handler's name
+- [x] Checked in the browser with the Playwright MCP server: a live run on one claim shows its steps and its decision
+- [x] `npm run check:ts` passes, with coverage at 80% or more and no `any`
 
 ## Phase 6: end-to-end tests and the docs
 

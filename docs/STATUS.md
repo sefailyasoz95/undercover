@@ -1,10 +1,10 @@
 # Status
 
-The claims pilot, built from `docs/PLAN.md`. Done so far: phases 1 to 4.
+The claims pilot, built from `docs/PLAN.md`. Done so far: phases 1 to 5.
 
 - `backend/`: FastAPI on SQLite. `db.py` seeds the database from `data/` (never `data/evals/` or `data/security/`); the read operations serve the queue, claims, policies with their plans, claim history, the policy wording, the agent's instructions (`backend/instructions.md`) and the handlers. The write operations start a claim, record a decision, pay a claim, sign off and record the agent's steps. A payment over the $1,000 limit in `data/company.json` is refused until a handler signs off, and signing off makes the payment
 - `agent/`: the UnderCover Agent, `run(claim_id, thread_id)`. It fetches its instructions from the backend, reads the claim, its policy and plan, the customer's claim history and the policy wording, records a decision and pays approved claims, all through the backend's API. Its tools are bound to the claim it works on. It posts each step to the backend as it goes, and a run that ends without a decision refers the claim. The backend runs it in the background through `run_agent` and `run_queue`
-- `dashboard/`: React in the UnderCover brand, light and dark. The queue (`#/`) lists every claim with its state and a count for each state, and works the queue; the instructions view (`#/instructions`) shows the agent's instructions, read only. The claim view (`#/claims/<id>`) is a placeholder for now
+- `dashboard/`: React in the UnderCover brand, light and dark. The queue (`#/`) lists every claim with its state and a count for each state, and works the queue; the instructions view (`#/instructions`) shows the agent's instructions, read only. The claim view (`#/claims/<id>`) shows the claim, its policy, the decision and payment, and the agent's steps, refreshed every two seconds while the agent works. It runs the agent on a waiting claim, and a handler signs off a held payout there
 - `e2e/`: one test of that page
 
 ## Running it
